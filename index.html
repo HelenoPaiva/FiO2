@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FiO2 Calculator</title>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(180deg, #0b132b, #0f172a);
+    color: white;
+    margin: 0;
+    padding: 20px;
+}
+h1 {
+    text-align: center;
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+.card {
+    background: #1e293b;
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+}
+.section-title {
+    font-size: 14px;
+    opacity: 0.7;
+    margin-bottom: 10px;
+}
+.input-row {
+    display: flex;
+    gap: 10px;
+}
+.input-box {
+    flex: 1;
+}
+label {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-bottom: 4px;
+    display: block;
+}
+input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 18px;
+    background: #0b132b;
+    color: white;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+input:focus {
+    outline: 2px solid #3b82f6;
+}
+.result {
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 32px;
+}
+.hint {
+    font-size: 12px;
+    opacity: 0.7;
+    text-align: center;
+    margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<h1>FiO2 Calculator</h1>
+
+<div class="card">
+    <div class="section-title">Air + O2 → FiO2</div>
+    <div class="input-row">
+        <div class="input-box">
+            <label for="air">Air (L/min)</label>
+            <input id="air" type="text" inputmode="decimal" placeholder="0.0"
+                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+        </div>
+        <div class="input-box">
+            <label for="o2">O2 (L/min)</label>
+            <input id="o2" type="text" inputmode="decimal" placeholder="0.0"
+                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+        </div>
+    </div>
+    <div class="result" id="fio2Result">—</div>
+</div>
+
+<div class="card">
+    <div class="section-title">Total Flow + FiO2 → Flows</div>
+    <div class="input-row">
+        <div class="input-box">
+            <label for="total">Total (L/min)</label>
+            <input id="total" type="text" inputmode="decimal" placeholder="0.0"
+                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+        </div>
+        <div class="input-box">
+            <label for="targetFiO2">FiO2</label>
+            <input id="targetFiO2" type="text" inputmode="decimal" placeholder="0.40"
+                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+        </div>
+    </div>
+    <div class="result" id="flowResult">—</div>
+</div>
+
+<div class="hint" id="runtimeHint">If the result stays as — in file preview, open this file in Safari.</div>
+
+<script>
+function parseValue(raw) {
+    if (raw === undefined || raw === null) return NaN;
+    var cleaned = String(raw).trim().replace(/,/g, ".");
+    if (cleaned === "") return NaN;
+    var n = Number(cleaned);
+    return isFinite(n) ? n : NaN;
+}
+
+function updateAll() {
+    var airEl = document.getElementById("air");
+    var o2El = document.getElementById("o2");
+    var totalEl = document.getElementById("total");
+    var targetEl = document.getElementById("targetFiO2");
+    var fio2ResultEl = document.getElementById("fio2Result");
+    var flowResultEl = document.getElementById("flowResult");
+
+    var air = parseValue(airEl.value);
+    var o2 = parseValue(o2El.value);
+
+    if (!isFinite(air) && !isFinite(o2)) {
+        fio2ResultEl.textContent = "—";
+    } else {
+        var a = isFinite(air) ? air : 0;
+        var o = isFinite(o2) ? o2 : 0;
+        var totalForward = a + o;
+        if (totalForward > 0) {
+            var fio2 = (o + 0.21 * a) / totalForward;
+            fio2ResultEl.textContent = fio2.toFixed(2) + " (" + Math.round(fio2 * 100) + "%)";
+        } else {
+            fio2ResultEl.textContent = "—";
+        }
+    }
+
+    var total = parseValue(totalEl.value);
+    var fio2Target = parseValue(targetEl.value);
+
+    if (isFinite(total) && isFinite(fio2Target) && total > 0 && fio2Target >= 0.21 && fio2Target <= 1.0) {
+        var o2Flow = total * (fio2Target - 0.21) / 0.79;
+        var airFlow = total - o2Flow;
+        flowResultEl.textContent = "O2 " + o2Flow.toFixed(2) + " | Air " + airFlow.toFixed(2);
+    } else {
+        flowResultEl.textContent = "—";
+    }
+
+    var hint = document.getElementById("runtimeHint");
+    if (hint) hint.textContent = "Ready";
+}
+
+window.onload = function () {
+    updateAll();
+};
+</script>
+</body>
+</html>
