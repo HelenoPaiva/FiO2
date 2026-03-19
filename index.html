@@ -14,8 +14,18 @@ body {
 }
 h1 {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 10px;
     font-weight: 500;
+}
+.repo {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    opacity: 0.8;
+}
+.repo a {
+    color: #60a5fa;
+    text-decoration: none;
 }
 .card {
     background: #1e293b;
@@ -51,11 +61,6 @@ input {
     background: #0b132b;
     color: white;
     box-sizing: border-box;
-    -webkit-appearance: none;
-    appearance: none;
-}
-input:focus {
-    outline: 2px solid #3b82f6;
 }
 .result {
     font-size: 24px;
@@ -64,29 +69,25 @@ input:focus {
     margin-top: 12px;
     min-height: 32px;
 }
-.hint {
-    font-size: 12px;
-    opacity: 0.7;
-    text-align: center;
-    margin-top: 8px;
-}
 </style>
 </head>
 <body>
+
 <h1>FiO2 Calculator</h1>
+<div class="repo">
+    <a href="https://github.com/HelenoPaiva/FiO2" target="_blank">github.com/HelenoPaiva/FiO2</a>
+</div>
 
 <div class="card">
     <div class="section-title">Air + O2 → FiO2</div>
     <div class="input-row">
         <div class="input-box">
-            <label for="air">Air (L/min)</label>
-            <input id="air" type="text" inputmode="decimal" placeholder="0.0"
-                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+            <label>Air (L/min)</label>
+            <input id="air" inputmode="decimal" oninput="updateAll()">
         </div>
         <div class="input-box">
-            <label for="o2">O2 (L/min)</label>
-            <input id="o2" type="text" inputmode="decimal" placeholder="0.0"
-                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+            <label>O2 (L/min)</label>
+            <input id="o2" inputmode="decimal" oninput="updateAll()">
         </div>
     </div>
     <div class="result" id="fio2Result">—</div>
@@ -96,73 +97,52 @@ input:focus {
     <div class="section-title">Total Flow + FiO2 → Flows</div>
     <div class="input-row">
         <div class="input-box">
-            <label for="total">Total (L/min)</label>
-            <input id="total" type="text" inputmode="decimal" placeholder="0.0"
-                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+            <label>Total (L/min)</label>
+            <input id="total" inputmode="decimal" oninput="updateAll()">
         </div>
         <div class="input-box">
-            <label for="targetFiO2">FiO2</label>
-            <input id="targetFiO2" type="text" inputmode="decimal" placeholder="0.40"
-                   oninput="updateAll()" onchange="updateAll()" onkeyup="updateAll()">
+            <label>FiO2</label>
+            <input id="targetFiO2" inputmode="decimal" oninput="updateAll()">
         </div>
     </div>
     <div class="result" id="flowResult">—</div>
 </div>
 
-<div class="hint" id="runtimeHint">If the result stays as — in file preview, open this file in Safari.</div>
-
 <script>
-function parseValue(raw) {
-    if (raw === undefined || raw === null) return NaN;
-    var cleaned = String(raw).trim().replace(/,/g, ".");
-    if (cleaned === "") return NaN;
-    var n = Number(cleaned);
+function parseValue(v){
+    if(!v) return NaN;
+    v = v.replace(',', '.');
+    let n = Number(v);
     return isFinite(n) ? n : NaN;
 }
 
-function updateAll() {
-    var airEl = document.getElementById("air");
-    var o2El = document.getElementById("o2");
-    var totalEl = document.getElementById("total");
-    var targetEl = document.getElementById("targetFiO2");
-    var fio2ResultEl = document.getElementById("fio2Result");
-    var flowResultEl = document.getElementById("flowResult");
+function updateAll(){
+    let air = parseValue(document.getElementById("air").value);
+    let o2 = parseValue(document.getElementById("o2").value);
 
-    var air = parseValue(airEl.value);
-    var o2 = parseValue(o2El.value);
+    let total = (isFinite(air)?air:0) + (isFinite(o2)?o2:0);
 
-    if (!isFinite(air) && !isFinite(o2)) {
-        fio2ResultEl.textContent = "—";
+    if(total > 0){
+        let fio2 = ((isFinite(o2)?o2:0) + 0.21*(isFinite(air)?air:0)) / total;
+        document.getElementById("fio2Result").innerText =
+            fio2.toFixed(2) + " (" + Math.round(fio2*100) + "%)";
     } else {
-        var a = isFinite(air) ? air : 0;
-        var o = isFinite(o2) ? o2 : 0;
-        var totalForward = a + o;
-        if (totalForward > 0) {
-            var fio2 = (o + 0.21 * a) / totalForward;
-            fio2ResultEl.textContent = fio2.toFixed(2) + " (" + Math.round(fio2 * 100) + "%)";
-        } else {
-            fio2ResultEl.textContent = "—";
-        }
+        document.getElementById("fio2Result").innerText = "—";
     }
 
-    var total = parseValue(totalEl.value);
-    var fio2Target = parseValue(targetEl.value);
+    let t = parseValue(document.getElementById("total").value);
+    let f = parseValue(document.getElementById("targetFiO2").value);
 
-    if (isFinite(total) && isFinite(fio2Target) && total > 0 && fio2Target >= 0.21 && fio2Target <= 1.0) {
-        var o2Flow = total * (fio2Target - 0.21) / 0.79;
-        var airFlow = total - o2Flow;
-        flowResultEl.textContent = "O2 " + o2Flow.toFixed(2) + " | Air " + airFlow.toFixed(2);
+    if(isFinite(t) && isFinite(f) && t>0 && f>=0.21 && f<=1){
+        let o = t*(f-0.21)/0.79;
+        let a = t-o;
+        document.getElementById("flowResult").innerText =
+            "O2 " + o.toFixed(2) + " | Air " + a.toFixed(2);
     } else {
-        flowResultEl.textContent = "—";
+        document.getElementById("flowResult").innerText = "—";
     }
-
-    var hint = document.getElementById("runtimeHint");
-    if (hint) hint.textContent = "Ready";
 }
-
-window.onload = function () {
-    updateAll();
-};
 </script>
+
 </body>
 </html>
